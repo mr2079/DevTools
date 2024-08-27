@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Net.NetworkInformation;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace DevTools.Cli;
 
@@ -20,19 +21,42 @@ public class DevToolsCommands
     [Command("token")]
     public void GenerateToken([Argument] int length, [Option("c")] int? count)
     {
-        var randomNumber = new byte[length];
-        using var rng = RandomNumberGenerator.Create();
+        var valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        var sb = new StringBuilder();
 
         if (count is not null)
             for (var i = 0; i < count; i++)
             {
-                rng.GetBytes(randomNumber);
-                Console.WriteLine(Convert.ToBase64String(randomNumber));
+                var l = length;
+
+                using (var rng = new RNGCryptoServiceProvider())
+                {
+                    byte[] uintBuffer = new byte[sizeof(uint)];
+
+                    while (l-- > 0)
+                    {
+                        rng.GetBytes(uintBuffer);
+                        var num = BitConverter.ToUInt32(uintBuffer, 0);
+                        sb.Append(valid[(int)(num % (uint)valid.Length)]);
+                    }
+                }
+                Console.WriteLine(sb.ToString());
+                sb.Clear();
             }
         else
         {
-            rng.GetBytes(randomNumber);
-            Console.WriteLine(Convert.ToBase64String(randomNumber));
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                byte[] uintBuffer = new byte[sizeof(uint)];
+
+                while (length-- > 0)
+                {
+                    rng.GetBytes(uintBuffer);
+                    var num = BitConverter.ToUInt32(uintBuffer, 0);
+                    sb.Append(valid[(int)(num % (uint)valid.Length)]);
+                }
+            }
+            Console.WriteLine(sb.ToString());
         }
     }
 
