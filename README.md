@@ -9,7 +9,7 @@ dotnet pack
 ```
 after nupkg created in ```.\nupkg```, you must install it as a global tool with dotnet cli:
 ```
-dotnet tools install DevTools.Cli --global --add-source .\nupkg\
+dotnet tool install DevTools.Cli --global --add-source .\nupkg\
 ```
 and then you can access cli app globaly with ```dev-tools``` in command line
 
@@ -31,15 +31,15 @@ f5f5b2fb-e6e7-4fad-ab88-0f23b1644ace
 ```
 PS C:\> dev-tools token 24
 
-MMtdkXBNRw3SfXAj0M+6lk5PnLMGgGkv
+wYwZzzD9ep6cshl7EWbwdUZ2
 ```
 
 ```
 PS C:\> dev-tools token 16 --c 3
 
-8p+iam4ly0o/umgOteFHxA==
-u5Vykg5Pd4mbWaWeincylg==
-F3keKSkR0kWUA1ZQbj0Fvg==
+PMqzzFvEjemibpGN
+vg1Nyvyx41PDe8i5
+rcU1wWetY4HlxL1a
 ```
 
 ```
