@@ -60,32 +60,56 @@ public class DevToolsCommands
         }
     }
 
-    [Command("dns-reset")]
-    public void ResetDns()
+    [Command("dns")]
+    public void DnsOperations([Argument] string command, [Argument] string? preferred, [Argument] string? alternate)
     {
         var nic = GetActiveEthernetOrWifiNetworkInterface().Result;
 
         if (nic is null)
-            Console.WriteLine("there is a problem in get network interface information!");
+        {
+            Console.WriteLine("there is a problem in get network interface information!\ncheck network connection");
+            return;
+        }
 
-        var reset = RunCommand($"netsh interface ipv4 set dns \"{nic!.Name}\" dhcp");
-        Console.WriteLine(reset
-            ? "dns addresses have been removed"
-            : "there is a problem in reset dns addresses!");
-    }
+        switch (command)
+        {
+            case "status":
+                {
+                    var dnsAddresses = nic.GetIPProperties().DnsAddresses;
 
-    [Command("dns-change")]
-    public void ChangeDns([Argument] string preferred, [Argument] string alternate)
-    {
-        var nic = GetActiveEthernetOrWifiNetworkInterface().Result;
+                    Console.WriteLine(dnsAddresses.Count >= 2
+                        ? $"dns addresses: preferred = {dnsAddresses[0]} , alternate = {dnsAddresses[1]}"
+                        : $"dns addresses: preferred = {dnsAddresses[0]}");
 
-        if (nic is null)
-            Console.WriteLine("there is a problem in get network interface information!");
+                    break;
+                }
+            case "reset":
+                {
+                    var reset = RunCommand($"netsh interface ipv4 set dns \"{nic!.Name}\" dhcp");
 
-        var change = RunCommand(CreateSetCommand(nic!.Name, preferred, alternate));
-        Console.WriteLine(change
-            ? $"dns addresses have been changed to {preferred}, {alternate}"
-            : "there is a problem in change dns addresses!");
+                    Console.WriteLine(reset
+                        ? "dns addresses have been removed"
+                        : "there is a problem in reset dns addresses!");
+
+                    break;
+                }
+            case "change":
+                {
+                    if (string.IsNullOrWhiteSpace(preferred))
+                    {
+                        Console.WriteLine("enter preferred dns address at least!");
+                        break;
+                    }
+
+                    var change = RunCommand(CreateSetCommand(nic.Name, preferred, alternate!));
+
+                    Console.WriteLine(change
+                        ? $"dns addresses have been changed to {preferred}, {alternate}"
+                        : "there is a problem in change dns addresses!");
+
+                    break;
+                }
+        }
     }
 
     #region dns methods
@@ -106,11 +130,13 @@ public class DevToolsCommands
     {
         try
         {
-            ProcessStartInfo psi = new ProcessStartInfo("powershell.exe");
-            psi.UseShellExecute = true;
-            psi.WindowStyle = ProcessWindowStyle.Hidden;
-            psi.Verb = "runas";
-            psi.Arguments = arg;
+            ProcessStartInfo psi = new("powershell.exe")
+            {
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                Verb = "runas",
+                Arguments = arg
+            };
             Process.Start(psi);
             return true;
         }
