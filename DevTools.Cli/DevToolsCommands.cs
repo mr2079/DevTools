@@ -3,13 +3,51 @@ using System.Diagnostics;
 using System.Net.NetworkInformation;
 using System.Security.Cryptography;
 using System.Text;
+using Bogus;
 
 namespace DevTools.Cli;
 
 public class DevToolsCommands
 {
+    #region dns methods
+
+    private Task<NetworkInterface?> GetActiveEthernetOrWifiNetworkInterface()
+    {
+        return Task.FromResult(
+            NetworkInterface.GetAllNetworkInterfaces()
+                .FirstOrDefault(a => a is { OperationalStatus: OperationalStatus.Up, NetworkInterfaceType: NetworkInterfaceType.Wireless80211 or NetworkInterfaceType.Ethernet }
+                                     && a.GetIPProperties().GatewayAddresses
+                                         .Any(g => g.Address.AddressFamily.ToString() == "InterNetwork")));
+    }
+
+    private string CreateSetCommand(string nicName, string preferred, string alternate)
+        => $"netsh interface ipv4 add dnsservers \"{nicName}\" address={preferred} index=1 ; netsh interface ipv4 add dnsservers \"{nicName}\" address={alternate} index=2";
+
+    private bool RunCommand(string arg)
+    {
+        try
+        {
+            ProcessStartInfo psi = new("powershell.exe")
+            {
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                Verb = "runas",
+                Arguments = arg
+            };
+            Process.Start(psi);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    #endregion
+
     [Command("guid")]
-    public void NewGuid([Option("c")] int? count)
+    public void NewGuid(
+        [Option("c")] int? count)
     {
         if (count is not null)
             for (var i = 0; i < count; i++)
@@ -19,7 +57,9 @@ public class DevToolsCommands
     }
 
     [Command("token")]
-    public void GenerateToken([Argument] int length, [Option("c")] int? count)
+    public void GenerateToken(
+        [Argument] int length,
+        [Option("c")] int? count)
     {
         var valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         var sb = new StringBuilder();
@@ -61,7 +101,10 @@ public class DevToolsCommands
     }
 
     [Command("dns")]
-    public void DnsOperations([Argument] string command, [Argument] string? preferred, [Argument] string? alternate)
+    public void DnsOperations(
+        [Argument] string command,
+        [Argument] string? preferred,
+        [Argument] string? alternate)
     {
         var nic = GetActiveEthernetOrWifiNetworkInterface().Result;
 
@@ -112,39 +155,54 @@ public class DevToolsCommands
         }
     }
 
-    #region dns methods
-
-    private Task<NetworkInterface?> GetActiveEthernetOrWifiNetworkInterface()
+    [Command("lorem")]
+    public void LoremIpsum(
+        [Option("l")] string? locale,
+        [Option("w")] int? word,
+        [Option("s")] int? sentence,
+        [Option("p")] int? paragraph)
     {
-        return Task.FromResult(
-            NetworkInterface.GetAllNetworkInterfaces()
-                .FirstOrDefault(a => a is { OperationalStatus: OperationalStatus.Up, NetworkInterfaceType: NetworkInterfaceType.Wireless80211 or NetworkInterfaceType.Ethernet }
-                                     && a.GetIPProperties().GatewayAddresses
-                                         .Any(g => g.Address.AddressFamily.ToString() == "InterNetwork")));
-    }
+        var faker = new Faker();
 
-    private string CreateSetCommand(string nicName, string preferred, string alternate)
-        => $"netsh interface ipv4 add dnsservers \"{nicName}\" address={preferred} index=1 ; netsh interface ipv4 add dnsservers \"{nicName}\" address={alternate} index=2";
+        if (!string.IsNullOrWhiteSpace(locale))
+            faker = new Faker(locale);
 
-    private bool RunCommand(string arg)
-    {
-        try
+        if (paragraph != null)
         {
-            ProcessStartInfo psi = new("powershell.exe")
+            if (sentence != null)
             {
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Hidden,
-                Verb = "runas",
-                Arguments = arg
-            };
-            Process.Start(psi);
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+                for (var i = 0; i < paragraph; i++)
+                    Console.WriteLine(faker.Lorem.Paragraph((int)sentence));
 
-    #endregion
+                return;
+            }
+
+            Console.WriteLine(faker.Lorem.Paragraphs((int)paragraph));
+            return;
+        }
+
+        if (sentence != null)
+        {
+            if (word != null)
+            {
+                for (var i = 0; i < sentence; i++)
+                    Console.WriteLine(faker.Lorem.Sentence(word));
+
+                return;
+            }
+
+            Console.WriteLine(faker.Lorem.Sentences(sentence));
+            return;
+        }
+
+        if (word != null)
+        {
+            for (var i = 0; i < word; i++)
+                Console.WriteLine(faker.Lorem.Word());
+
+            return;
+        }
+
+        Console.WriteLine(faker.Lorem.Sentence());
+    }
 }
