@@ -45,9 +45,9 @@ public class DevToolsCommands
 
     #endregion
 
-    [Command("guid")]
+    [Command(CommandStatics.Guid)]
     public void NewGuid(
-        [Option("c")] int? count)
+        [Option(OptionStatics.Count)] int? count)
     {
         if (count is not null)
             for (var i = 0; i < count; i++)
@@ -56,10 +56,10 @@ public class DevToolsCommands
             Console.WriteLine(Guid.NewGuid());
     }
 
-    [Command("token")]
+    [Command(CommandStatics.Token)]
     public void GenerateToken(
         [Argument] int length,
-        [Option("c")] int? count)
+        [Option(OptionStatics.Count)] int? count)
     {
         var valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         var sb = new StringBuilder();
@@ -100,9 +100,9 @@ public class DevToolsCommands
         }
     }
 
-    [Command("dns")]
+    [Command(CommandStatics.Dns)]
     public void DnsOperations(
-        [Argument] string command,
+        [Argument] DnsCommandEnum command,
         [Argument] string? preferred,
         [Argument] string? alternate)
     {
@@ -116,7 +116,7 @@ public class DevToolsCommands
 
         switch (command)
         {
-            case "status":
+            case DnsCommandEnum.Status:
                 {
                     var dnsAddresses = nic.GetIPProperties().DnsAddresses;
 
@@ -126,7 +126,7 @@ public class DevToolsCommands
 
                     break;
                 }
-            case "reset":
+            case DnsCommandEnum.Reset:
                 {
                     var reset = RunCommand($"netsh interface ipv4 set dns \"{nic!.Name}\" dhcp");
 
@@ -136,7 +136,7 @@ public class DevToolsCommands
 
                     break;
                 }
-            case "change":
+            case DnsCommandEnum.Set:
                 {
                     if (string.IsNullOrWhiteSpace(preferred))
                     {
@@ -155,12 +155,12 @@ public class DevToolsCommands
         }
     }
 
-    [Command("lorem")]
+    [Command(CommandStatics.Lorem)]
     public void LoremIpsum(
-        [Option("l")] string? locale,
-        [Option("w")] int? word,
-        [Option("s")] int? sentence,
-        [Option("p")] int? paragraph)
+        [Option(OptionStatics.Locale)] string? locale,
+        [Option(OptionStatics.Word)] int? word,
+        [Option(OptionStatics.Sentence)] int? sentence,
+        [Option(OptionStatics.Paragraph)] int? paragraph)
     {
         var faker = new Faker();
 
